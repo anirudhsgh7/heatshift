@@ -52,14 +52,14 @@ export default function ResultCard({ result, isSample }) {
         </article>
       </div>
 
-      <div className="chart-block">
-        <p className="chart-title">Hourly feels-like in your window</p>
-        <HourChart
-          forecast={forecast}
-          suggestedStart={suggestedBlock.start}
-          suggestedEnd={suggestedBlock.end}
-        />
-      </div>
+      <HourChart
+        key={generatedAt}
+        forecast={forecast}
+        plannedStart={originalBlock.start}
+        plannedEnd={originalBlock.end}
+        suggestedStart={suggestedBlock.start}
+        suggestedEnd={suggestedBlock.end}
+      />
 
       <dl className="meta">
         <div>
