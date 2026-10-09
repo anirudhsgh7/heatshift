@@ -47,7 +47,7 @@ export default function WindowOptions({ options, selectedIndex, plannedAvg, onSe
         {options.map((option, index) => {
           const rain = option.rainProb
           return (
-            <li key={option.start}>
+            <li key={option.start} role="presentation">
               <button
                 type="button"
                 role="radio"

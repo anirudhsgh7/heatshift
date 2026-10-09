@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SAMPLE_LABEL } from '../sampleData.js'
+import { ACTIVITIES } from '../activities.js'
 import {
   averageFor,
   candidateWindows,
@@ -7,6 +8,8 @@ import {
   rainUsable,
   rankWindows,
 } from '../rankWindows.js'
+import { buildPlanSummary, buildShareQuery, buildShareUrl, copyText } from '../share.js'
+import { displayNameFor } from '../reverseGeocode.js'
 import HourChart from './HourChart.jsx'
 import WindowOptions from './WindowOptions.jsx'
 import { formatDelta, formatTemp, formatTempLabel, unitSymbol, useTempUnit } from '../units.js'
@@ -23,9 +26,12 @@ function round1(value) {
   return Math.round(value * 10) / 10
 }
 
-export default function ResultCard({ result, isSample, rainFirst = false }) {
+export default function ResultCard({ result, isSample, rainFirst = false, activity, currentLocation }) {
   const { originalBlock, suggestedBlock, forecast, timezone, location, source, generatedAt } = result
+  const displayName = displayNameFor(location, currentLocation) ?? location.name
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [copyState, setCopyState] = useState(null)
+  const copyTimer = useRef(null)
   const { unit } = useTempUnit()
   const symbol = unitSymbol(unit)
 
@@ -58,6 +64,75 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
   const selectedRange = formatBlock(selected)
   const plannedRange = formatBlock(originalBlock)
   const rank = activeIndex + 1
+
+  const activityLabel = ACTIVITIES.find((a) => a.id === activity)?.label ?? null
+  const firstHour = forecast.length > 0 ? forecast[0].time : ''
+  const lastHour = forecast.length > 0 ? forecast[forecast.length - 1].time : ''
+  const canShare = !isSample && forecast.length > 0
+  const shareQuery = canShare
+    ? buildShareQuery({
+        name: displayName,
+        lat: location.lat,
+        lon: location.lon,
+        date: firstHour.slice(0, 10),
+        startHour: Number(firstHour.slice(11, 13)),
+        endHour: Number(lastHour.slice(11, 13)) + 1,
+        duration,
+        chosenHour: Number(originalBlock.start.slice(11, 13)),
+        activity,
+        rainFirst,
+      })
+    : ''
+
+  useEffect(() => () => clearTimeout(copyTimer.current), [])
+
+  function flashCopy(state) {
+    setCopyState(state)
+    clearTimeout(copyTimer.current)
+    copyTimer.current = setTimeout(() => setCopyState(null), 2600)
+  }
+
+  async function copyPayload(text, kind) {
+    try {
+      await copyText(text)
+      flashCopy(kind)
+    } catch {
+      flashCopy('error')
+    }
+  }
+
+  function handleCopyPlan() {
+    if (!canShare) return
+    copyPayload(
+      buildPlanSummary({
+        city: displayName,
+        timezone,
+        date: firstHour.slice(0, 10),
+        activityLabel,
+        duration,
+        planned: { start: originalBlock.start, end: originalBlock.end, avg: plannedAvg },
+        selected: { start: selected.start, end: selected.end, avg: selected.avg },
+        unit,
+        generatedAt,
+        link: buildShareUrl(shareQuery),
+      }),
+      'plan'
+    )
+  }
+
+  function handleCopyLink() {
+    if (!canShare || !shareQuery) return
+    copyPayload(buildShareUrl(shareQuery), 'link')
+  }
+
+  const copyFeedback =
+    copyState === 'plan'
+      ? 'Plan copied to clipboard.'
+      : copyState === 'link'
+        ? 'Share link copied to clipboard.'
+        : copyState === 'error'
+          ? 'Copy failed — your browser blocked clipboard access.'
+          : ''
 
   let headline
   let sub
@@ -144,7 +219,7 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
       <dl className="meta">
         <div>
           <dt>Location</dt>
-          <dd>{location.name}</dd>
+          <dd>{displayName}</dd>
         </div>
         <div>
           <dt>Window</dt>
@@ -159,6 +234,34 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
           <dd>{new Date(generatedAt).toLocaleString()}</dd>
         </div>
       </dl>
+
+      <div className="result__actions">
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={handleCopyPlan}
+          disabled={!canShare}
+          title={isSample ? 'Sample data cannot be shared' : undefined}
+        >
+          Copy plan
+        </button>
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={handleCopyLink}
+          disabled={!canShare}
+          title={isSample ? 'Sample data cannot be shared' : undefined}
+        >
+          Copy link
+        </button>
+        <span
+          className={copyState === 'error' ? 'copy-feedback copy-feedback--error' : 'copy-feedback'}
+          role="status"
+          aria-live="polite"
+        >
+          {copyFeedback}
+        </span>
+      </div>
 
       <p className="result__source">
         Source: {source}. Forecast-based planning estimate, ranked by temperature only — not medical

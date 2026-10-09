@@ -81,7 +81,7 @@ export default function ActivityPicker({ activity, onChange }) {
         {ACTIVITIES.map((item, index) => {
           const selected = activity === item.id
           return (
-            <li key={item.id}>
+            <li key={item.id} role="presentation">
               <button
                 type="button"
                 role="radio"

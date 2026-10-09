@@ -30,7 +30,7 @@ export default function WeatherOverview({ location, selectedDate }) {
           <h2 className="card__title" id="overview-title">
             Weather overview
           </h2>
-          <p className="card__hint">Modeled forecast values for the selected city.</p>
+          <p className="card__hint">Modeled forecast values for {location.name}.</p>
         </div>
         <UnitToggle />
       </div>

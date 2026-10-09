@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { fetchRecommendation } from './api.js'
 import { sampleRecommendation } from './sampleData.js'
@@ -6,13 +6,19 @@ import LocationPicker from './components/LocationPicker.jsx'
 import TaskForm from './components/TaskForm.jsx'
 import ResultCard from './components/ResultCard.jsx'
 import WeatherOverview from './components/WeatherOverview.jsx'
-import { DEFAULT_ACTIVITY } from './activities.js'
+import ComplianceBadges from './components/ComplianceBadges.jsx'
+import { ACTIVITIES, DEFAULT_ACTIVITY } from './activities.js'
 import { PRESET_CITIES } from './presets.js'
+import { nearbyLabel, reverseGeocode } from './reverseGeocode.js'
+import { buildShareQuery, parseShareQuery } from './share.js'
 import { loadUnit, saveUnit, TempUnitContext } from './units.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
 }
+
+const CURRENT_YEAR = new Date().getFullYear()
+const ACTIVITY_IDS = ACTIVITIES.map((activity) => activity.id)
 
 function dateString(offsetDays = 0) {
   const d = new Date()
@@ -24,35 +30,61 @@ function isoHour(date, hour) {
   return `${date}T${pad(hour)}:00`
 }
 
-export default function App() {
-  const today = dateString(0)
-  const tomorrow = dateString(1)
-
-  const [location, setLocation] = useState(PRESET_CITIES[0])
-  const [locating, setLocating] = useState(false)
-  const [geoError, setGeoError] = useState('')
-  const [form, setForm] = useState({
-    date: today,
+function defaultForm(date) {
+  return {
+    date,
     startHour: 10,
     endHour: 17,
     duration: 2,
     chosenHour: 13,
     activity: DEFAULT_ACTIVITY,
     rainFirst: false,
+  }
+}
+
+function parseCurrentUrl(today) {
+  return parseShareQuery(typeof window !== 'undefined' ? window.location.search : '', {
+    today,
+    tomorrow: dateString(1),
+    activities: ACTIVITY_IDS,
   })
+}
+
+export default function App() {
+  const today = dateString(0)
+  const tomorrow = dateString(1)
+
+  const [boot] = useState(() => {
+    const bootToday = dateString(0)
+    const parsed = parseCurrentUrl(bootToday)
+    return {
+      parsed,
+      form: parsed?.form ? { ...defaultForm(bootToday), ...parsed.form } : null,
+    }
+  })
+
+  const [location, setLocation] = useState(() => boot.parsed?.location ?? PRESET_CITIES[0])
+  const [locating, setLocating] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [geoError, setGeoError] = useState('')
+  const [geoNameError, setGeoNameError] = useState(false)
+  const [form, setForm] = useState(() => boot.form ?? defaultForm(today))
+  const [shareNotice, setShareNotice] = useState(() => boot.parsed?.notice ?? '')
   const [result, setResult] = useState(null)
   const [isSample, setIsSample] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [unit, setUnitState] = useState(loadUnit)
   const abortRef = useRef(null)
+  const runRef = useRef(null)
+  const locateSeqRef = useRef(0)
 
   function changeUnit(next) {
     setUnitState(next)
     saveUnit(next)
   }
 
-  async function runRecommendation(nextForm) {
+  async function runRecommendation(nextForm, nextLocation = location) {
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -65,13 +97,13 @@ export default function App() {
     try {
       const data = await fetchRecommendation(
         {
-          lat: location.lat,
-          lon: location.lon,
+          lat: nextLocation.lat,
+          lon: nextLocation.lon,
           duration: nextForm.duration,
           start: isoHour(nextForm.date, nextForm.startHour),
           end: isoHour(nextForm.date, nextForm.endHour),
           chosen: isoHour(nextForm.date, nextForm.chosenHour),
-          name: location.name,
+          name: nextLocation.name,
         },
         { signal: controller.signal }
       )
@@ -84,9 +116,96 @@ export default function App() {
     }
   }
 
+  useEffect(() => {
+    runRef.current = runRecommendation
+  })
+
+  useEffect(() => {
+    if (boot.form && boot.parsed?.location) {
+      runRef.current(boot.form, boot.parsed.location)
+    }
+    function onPopState() {
+      const parsed = parseCurrentUrl(dateString(0))
+      if (parsed?.location && parsed.form) {
+        const nextForm = { ...defaultForm(dateString(0)), ...parsed.form }
+        setLocation(parsed.location)
+        setForm(nextForm)
+        setShareNotice(parsed.notice ?? '')
+        runRef.current(nextForm, parsed.location)
+      } else if (parsed?.invalid) {
+        setShareNotice(parsed.notice)
+        setResult(null)
+        setError('')
+        setIsSample(false)
+      } else {
+        setShareNotice('')
+        setResult(null)
+        setError('')
+        setIsSample(false)
+      }
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [boot])
+
   function handleSubmit(nextForm) {
     setForm(nextForm)
+    setShareNotice('')
     runRecommendation(nextForm)
+    if (typeof window !== 'undefined') {
+      const query = buildShareQuery({
+        name: location.name,
+        lat: location.lat,
+        lon: location.lon,
+        date: nextForm.date,
+        startHour: nextForm.startHour,
+        endHour: nextForm.endHour,
+        duration: nextForm.duration,
+        chosenHour: nextForm.chosenHour,
+        activity: nextForm.activity,
+        rainFirst: nextForm.rainFirst,
+      })
+      const nextUrl = `?${query}`
+      if (window.location.search !== nextUrl) {
+        window.history.pushState(null, '', nextUrl)
+      }
+    }
+  }
+
+  function handleSelectLocation(place) {
+    locateSeqRef.current += 1
+    setLocating(false)
+    setResolving(false)
+    setGeoNameError(false)
+    setLocation(place)
+  }
+
+  function geoErrorMessage(error) {
+    if (error?.code === 1) return 'Location permission denied — pick a city instead.'
+    if (error?.code === 2) return 'Your device could not determine a location — pick a city instead.'
+    if (error?.code === 3) return 'Getting your location timed out — try again or pick a city.'
+    return 'Could not get your location — pick a city instead.'
+  }
+
+  async function resolvePlaceName(lat, lon, fallbackName, seq) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 6000)
+    try {
+      const label = await reverseGeocode(lat, lon, { signal: controller.signal })
+      if (seq !== locateSeqRef.current) return
+      setLocation((current) =>
+        current.lat === lat && current.lon === lon && current.name === fallbackName
+          ? { ...current, name: label }
+          : current
+      )
+      setGeoNameError(false)
+    } catch {
+      if (seq !== locateSeqRef.current) return
+      setGeoNameError(true)
+    } finally {
+      clearTimeout(timer)
+      if (seq === locateSeqRef.current) setResolving(false)
+    }
   }
 
   function handleLocate() {
@@ -94,19 +213,26 @@ export default function App() {
       setGeoError('Geolocation is not supported by this browser — pick a city instead.')
       return
     }
+    const seq = locateSeqRef.current + 1
+    locateSeqRef.current = seq
     setLocating(true)
     setGeoError('')
+    setGeoNameError(false)
+    setResolving(false)
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
-          name: 'My location',
-          lat: Number(position.coords.latitude.toFixed(4)),
-          lon: Number(position.coords.longitude.toFixed(4)),
-        })
+        if (seq !== locateSeqRef.current) return
+        const lat = Number(position.coords.latitude.toFixed(4))
+        const lon = Number(position.coords.longitude.toFixed(4))
+        const fallback = nearbyLabel(lat, lon)
+        setLocation({ name: fallback, lat, lon })
         setLocating(false)
+        setResolving(true)
+        resolvePlaceName(lat, lon, fallback, seq)
       },
-      () => {
-        setGeoError('Location permission denied — pick a city instead.')
+      (error) => {
+        if (seq !== locateSeqRef.current) return
+        setGeoError(geoErrorMessage(error))
         setLocating(false)
       },
       { timeout: 10000 }
@@ -151,7 +277,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="page">
+      <main className="page">
         <section className="hero">
           <div className="hero__inner">
             <p className="hero__kicker">Forecast-based planning aid</p>
@@ -169,7 +295,7 @@ export default function App() {
           </div>
         </section>
 
-        <main className="layout">
+        <div className="layout">
           <div className="layout__planner">
             <section className="card card--pad" aria-labelledby="location-title">
               <div className="card__head">
@@ -180,9 +306,11 @@ export default function App() {
               </div>
               <LocationPicker
                 location={location}
-                onSelect={setLocation}
+                onSelect={handleSelectLocation}
                 onLocate={handleLocate}
                 locating={locating}
+                resolving={resolving}
+                nameError={geoNameError}
                 geoError={geoError}
               />
             </section>
@@ -208,6 +336,15 @@ export default function App() {
           </div>
 
           <div className="layout__results">
+            {shareNotice && (
+              <div className="notice" role="status">
+                <p>{shareNotice}</p>
+                <button type="button" className="notice__dismiss" onClick={() => setShareNotice('')}>
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {error && (
               <div className="alert" role="alert">
                 <p>{error}</p>
@@ -230,6 +367,8 @@ export default function App() {
                 result={result}
                 isSample={isSample}
                 rainFirst={form.rainFirst}
+                activity={form.activity}
+                currentLocation={location}
               />
             ) : (
               !loading &&
@@ -244,18 +383,33 @@ export default function App() {
               )
             )}
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       <footer className="footer">
         <div className="footer__inner">
+          <ComplianceBadges />
+          <div className="footer__rule" role="presentation" />
           <p>
             Weather data by Open-Meteo.com (CC BY 4.0), based on multiple national weather
             services. Forecast timestamps use the location's local time.
           </p>
           <p>
+            Reverse place names by OpenStreetMap Nominatim (© OpenStreetMap contributors, ODbL).
+          </p>
+          <p className="footer__privacy">
+            Privacy: no accounts, no cookies, no analytics. Your device location is read only when
+            you tap "Use my location" — the coordinates are sent to the HeatShift API, Open-Meteo,
+            and OpenStreetMap Nominatim to build the forecast and a place name, and nothing is
+            stored server-side. The only browser storage is your °C/°F preference. Data requests:
+            open an issue on the project repository.
+          </p>
+          <p>
             HeatShift suggests cooler forecast windows. It is a planning aid, not medical or
             safety guidance.
+          </p>
+          <p className="footer__copyright">
+            © {CURRENT_YEAR} HeatShift — Find a cooler time for your outdoor task
           </p>
         </div>
       </footer>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PRESET_CITIES } from '../presets.js'
 
-export default function LocationPicker({ location, onSelect, onLocate, locating, geoError }) {
+export default function LocationPicker({ location, onSelect, onLocate, locating, resolving, nameError, geoError }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -57,7 +57,21 @@ export default function LocationPicker({ location, onSelect, onLocate, locating,
         </button>
       </div>
 
-      {geoError && <p className="hint hint--warn">{geoError}</p>}
+      {geoError && (
+        <p className="hint hint--warn" role="alert">
+          {geoError}
+        </p>
+      )}
+
+      {resolving && (
+        <p className="hint" role="status">
+          Resolving place name…
+        </p>
+      )}
+
+      {nameError && !resolving && (
+        <p className="hint">Could not resolve a place name — using the coordinates instead.</p>
+      )}
 
       <form className="search" onSubmit={handleSearch}>
         <input
@@ -72,7 +86,11 @@ export default function LocationPicker({ location, onSelect, onLocate, locating,
         </button>
       </form>
 
-      {searchError && <p className="hint hint--warn">{searchError}</p>}
+      {searchError && (
+        <p className="hint hint--warn" role="alert">
+          {searchError}
+        </p>
+      )}
 
       {results.length > 0 && (
         <ul className="search-results">
