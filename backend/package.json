@@ -1,0 +1,14 @@
+{
+  "name": "heatshift-backend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "HeatShift Lambda backend: fetches Open-Meteo forecast and recommends the coolest feasible task window.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node scripts/smoke.js"
+  }
+}
