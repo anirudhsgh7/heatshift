@@ -5,6 +5,7 @@ import { sampleRecommendation } from './sampleData.js'
 import LocationPicker from './components/LocationPicker.jsx'
 import TaskForm from './components/TaskForm.jsx'
 import ResultCard from './components/ResultCard.jsx'
+import WeatherOverview from './components/WeatherOverview.jsx'
 import { PRESET_CITIES } from './presets.js'
 
 function pad(value) {
@@ -168,6 +169,8 @@ export default function App() {
                 geoError={geoError}
               />
             </section>
+
+            <WeatherOverview location={location} selectedDate={form.date} />
 
             <section className="card card--pad" aria-labelledby="planner-title">
               <div className="card__head">
