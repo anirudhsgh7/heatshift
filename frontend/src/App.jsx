@@ -104,61 +104,135 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="hero">
-        <p className="hero-kicker">Heat and Water · Environmental Hacks 2026</p>
-        <h1>HeatShift</h1>
-        <p className="hero-tagline">
-          Find the coolest feasible window for an outdoor task, from the hourly feels-like forecast.
-        </p>
+      <header className="topbar">
+        <div className="topbar__inner">
+          <div className="brand">
+            <svg className="brand__mark" viewBox="0 0 26 26" aria-hidden="true">
+              <circle cx="13" cy="9.5" r="4.6" fill="currentColor" />
+              <path
+                d="M13 1.8v2.4M4.6 5.2l1.7 1.7M21.4 5.2l-1.7 1.7"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+              <path
+                className="brand__line"
+                d="M3 18.5h20M7.5 23h11"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="brand__name">
+              Heat<span className="brand__name-accent">Shift</span>
+            </span>
+          </div>
+          <span className="topbar__badge">
+            <span className="topbar__dot" aria-hidden="true" />
+            Heat &amp; Water · Environmental Hacks 2026
+          </span>
+        </div>
       </header>
 
-      <main className="main">
-        <section className="panel">
-          <LocationPicker
-            location={location}
-            onSelect={setLocation}
-            onLocate={handleLocate}
-            locating={locating}
-            geoError={geoError}
-          />
-          <TaskForm
-            value={form}
-            onChange={setForm}
-            onSubmit={handleSubmit}
-            loading={loading}
-            today={today}
-            tomorrow={tomorrow}
-          />
+      <div className="page">
+        <section className="hero">
+          <div className="hero__inner">
+            <p className="hero__kicker">Forecast-based planning aid</p>
+            <h1>Find the coolest window for your outdoor task.</h1>
+            <p className="hero__lede">
+              HeatShift compares every feasible start time inside your available window using the
+              hourly feels-like temperature — and shows how much cooler the best slot is than the
+              one you planned.
+            </p>
+            <ul className="hero__facts">
+              <li>1–6 hour tasks</li>
+              <li>Hourly feels-like temps</li>
+              <li>Live Open-Meteo forecast</li>
+            </ul>
+          </div>
         </section>
 
-        {error && (
-          <div className="alert" role="alert">
-            <p>{error}</p>
-            <button type="button" className="btn btn--secondary" onClick={handleSample}>
-              Show labelled sample data
-            </button>
-          </div>
-        )}
+        <main className="layout">
+          <div className="layout__planner">
+            <section className="card card--pad" aria-labelledby="location-title">
+              <div className="card__head">
+                <h2 className="card__title" id="location-title">
+                  Location
+                </h2>
+                <p className="card__hint">Preset city, city search, or your device location.</p>
+              </div>
+              <LocationPicker
+                location={location}
+                onSelect={setLocation}
+                onLocate={handleLocate}
+                locating={locating}
+                geoError={geoError}
+              />
+            </section>
 
-        {loading && (
-          <div className="status" role="status">
-            <span className="spinner" aria-hidden="true" />
-            Checking the forecast…
+            <section className="card card--pad" aria-labelledby="planner-title">
+              <div className="card__head">
+                <h2 className="card__title" id="planner-title">
+                  Task planner
+                </h2>
+                <p className="card__hint">When you can work, and how long the task takes.</p>
+              </div>
+              <TaskForm
+                value={form}
+                onChange={setForm}
+                onSubmit={handleSubmit}
+                loading={loading}
+                today={today}
+                tomorrow={tomorrow}
+              />
+            </section>
           </div>
-        )}
 
-        {result && <ResultCard result={result} isSample={isSample} />}
-      </main>
+          <div className="layout__results">
+            {error && (
+              <div className="alert" role="alert">
+                <p>{error}</p>
+                <button type="button" className="btn btn--secondary" onClick={handleSample}>
+                  Show labelled sample data
+                </button>
+              </div>
+            )}
+
+            {loading && (
+              <div className="status" role="status">
+                <span className="spinner" aria-hidden="true" />
+                Checking the forecast…
+              </div>
+            )}
+
+            {result ? (
+              <ResultCard result={result} isSample={isSample} />
+            ) : (
+              !loading &&
+              !error && (
+                <section className="empty">
+                  <h2>Your recommendation will appear here</h2>
+                  <p>
+                    Pick a location and a task window, then run the planner. We compare every
+                    feasible start hour by feels-like temperature and highlight the coolest one.
+                  </p>
+                </section>
+              )
+            )}
+          </div>
+        </main>
+      </div>
 
       <footer className="footer">
-        <p>
-          Weather data by Open-Meteo.com (CC BY 4.0), based on multiple national weather services.
-          Forecast timestamps use the location's local time.
-        </p>
-        <p>
-          HeatShift suggests cooler forecast windows. It is a planning aid, not medical or safety
-          guidance.
-        </p>
+        <div className="footer__inner">
+          <p>
+            Weather data by Open-Meteo.com (CC BY 4.0), based on multiple national weather
+            services. Forecast timestamps use the location's local time.
+          </p>
+          <p>
+            HeatShift suggests cooler forecast windows. It is a planning aid, not medical or
+            safety guidance.
+          </p>
+        </div>
       </footer>
     </div>
   )

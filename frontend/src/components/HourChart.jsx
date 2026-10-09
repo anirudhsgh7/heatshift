@@ -35,8 +35,8 @@ export default function HourChart({ forecast, suggestedStart, suggestedEnd }) {
       {forecast.map((hour) => {
         const inBlock = hour.time >= suggestedStart && hour.time < suggestedEnd
         const ratio = (hour.apparentTemp - min) / span
-        const height = 24 + ratio * 68
-        const hue = 205 - ratio * 185
+        const height = 28 + ratio * 84
+        const hue = 215 - ratio * 177
         const label = hour.time.slice(11, 16)
         return (
           <div key={hour.time} className={inBlock ? 'chart-col chart-col--on' : 'chart-col'}>

@@ -39,15 +39,14 @@ export default function LocationPicker({ location, onSelect, onLocate, locating,
   }
 
   return (
-    <div className="field">
-      <span className="field-label">Where is the task?</span>
-
+    <div className="location">
       <div className="chips">
         {PRESET_CITIES.map((city) => (
           <button
             key={city.name}
             type="button"
             className={location.name === city.name ? 'chip chip--active' : 'chip'}
+            aria-pressed={location.name === city.name}
             onClick={() => pick(city)}
           >
             {city.name}
@@ -87,8 +86,12 @@ export default function LocationPicker({ location, onSelect, onLocate, locating,
         </ul>
       )}
 
-      <p className="hint">
-        Selected: <strong>{location.name}</strong> ({location.lat.toFixed(2)}, {location.lon.toFixed(2)})
+      <p className="selection">
+        <span className="selection__label">Selected</span>
+        <strong>{location.name}</strong>
+        <span className="selection__coords">
+          {location.lat.toFixed(2)}, {location.lon.toFixed(2)}
+        </span>
       </p>
     </div>
   )

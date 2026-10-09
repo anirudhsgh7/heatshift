@@ -24,18 +24,20 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
   return (
     <form className="task-form" onSubmit={handleSubmit}>
       <div className="field">
-        <span className="field-label">When?</span>
-        <div className="chips">
+        <span className="field-label">Day</span>
+        <div className="segmented" role="group" aria-label="Which day">
           <button
             type="button"
-            className={date === today ? 'chip chip--active' : 'chip'}
+            className={date === today ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
+            aria-pressed={date === today}
             onClick={() => patch({ date: today })}
           >
             Today
           </button>
           <button
             type="button"
-            className={date === tomorrow ? 'chip chip--active' : 'chip'}
+            className={date === tomorrow ? 'segmented__btn segmented__btn--active' : 'segmented__btn'}
+            aria-pressed={date === tomorrow}
             onClick={() => patch({ date: tomorrow })}
           >
             Tomorrow
@@ -64,7 +66,7 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
       </div>
 
       <label className="field">
-        <span className="field-label">How long is the task?</span>
+        <span className="field-label">Task duration</span>
         <select value={duration} onChange={(e) => patch({ duration: Number(e.target.value) })}>
           {[1, 2, 3, 4, 5, 6].map((h) => (
             <option key={h} value={h}>{h} hour{h > 1 ? 's' : ''}</option>
@@ -73,7 +75,7 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
       </label>
 
       <label className="field">
-        <span className="field-label">When would you normally start?</span>
+        <span className="field-label">Usual start time</span>
         <select
           value={effectiveChosen}
           onChange={(e) => patch({ chosenHour: Number(e.target.value) })}
