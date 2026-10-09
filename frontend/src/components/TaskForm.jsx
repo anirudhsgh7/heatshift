@@ -1,3 +1,6 @@
+import { activityPatch } from '../activities.js'
+import ActivityPicker from './ActivityPicker.jsx'
+
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
 function hourLabel(hour) {
@@ -5,7 +8,7 @@ function hourLabel(hour) {
 }
 
 export default function TaskForm({ value, onChange, onSubmit, loading, today, tomorrow }) {
-  const { date, startHour, endHour, duration, chosenHour } = value
+  const { date, startHour, endHour, duration, chosenHour, rainFirst } = value
   const windowHours = endHour - startHour
   const windowFits = windowHours >= duration
   const lastStart = endHour - duration
@@ -13,6 +16,10 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
 
   function patch(partial) {
     onChange({ ...value, ...partial })
+  }
+
+  function pickActivity(activity) {
+    patch(activityPatch(activity))
   }
 
   function handleSubmit(event) {
@@ -23,6 +30,8 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
 
   return (
     <form className="task-form" onSubmit={handleSubmit}>
+      <ActivityPicker activity={value.activity} onChange={pickActivity} />
+
       <div className="field">
         <span className="field-label">Day</span>
         <div className="segmented" role="group" aria-label="Which day">
@@ -86,6 +95,22 @@ export default function TaskForm({ value, onChange, onSubmit, loading, today, to
               <option key={h} value={h}>{hourLabel(h)}</option>
             ))}
         </select>
+      </label>
+
+      <label className="pref">
+        <input
+          type="checkbox"
+          className="pref__input"
+          checked={rainFirst}
+          onChange={(e) => patch({ rainFirst: e.target.checked })}
+        />
+        <span className="pref__body">
+          <span className="pref__label">Prioritize avoiding rain</span>
+          <span className="pref__hint">
+            When on, windows are ranked by lowest rain chance first, then by feels-like temperature.
+            It only changes the ranking when the forecast shows a meaningful rain difference.
+          </span>
+        </span>
       </label>
 
       {!windowFits && (

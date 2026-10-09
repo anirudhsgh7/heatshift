@@ -579,6 +579,135 @@ select:disabled {
   color: var(--muted-2);
 }
 
+/* ---------- activity picker ---------- */
+
+.activities {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.activity {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.activity:hover {
+  border-color: var(--accent);
+}
+
+.activity:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.activity--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.activity__icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+}
+
+.activity__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.activity--on .activity__icon {
+  color: var(--accent-dark);
+}
+
+.activity-knob {
+  fill: var(--card);
+}
+
+.activity--on .activity-knob {
+  fill: var(--accent-soft);
+}
+
+.activity__label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+  line-height: 1.2;
+}
+
+.activity__hint {
+  font-size: 0.64rem;
+  color: var(--muted-2);
+}
+
+.activity--on .activity__hint {
+  color: var(--accent-dark);
+}
+
+/* ---------- preference toggle ---------- */
+
+.pref {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.pref:has(.pref__input:checked) {
+  border-color: rgba(15, 118, 110, 0.45);
+  background: var(--accent-soft);
+}
+
+.pref__input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.pref__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pref__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pref__label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.pref__hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
 /* ---------- task form ---------- */
 
 .task-form {

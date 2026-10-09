@@ -6,6 +6,7 @@ import LocationPicker from './components/LocationPicker.jsx'
 import TaskForm from './components/TaskForm.jsx'
 import ResultCard from './components/ResultCard.jsx'
 import WeatherOverview from './components/WeatherOverview.jsx'
+import { DEFAULT_ACTIVITY } from './activities.js'
 import { PRESET_CITIES } from './presets.js'
 
 function pad(value) {
@@ -29,7 +30,15 @@ export default function App() {
   const [location, setLocation] = useState(PRESET_CITIES[0])
   const [locating, setLocating] = useState(false)
   const [geoError, setGeoError] = useState('')
-  const [form, setForm] = useState({ date: today, startHour: 10, endHour: 17, duration: 2, chosenHour: 13 })
+  const [form, setForm] = useState({
+    date: today,
+    startHour: 10,
+    endHour: 17,
+    duration: 2,
+    chosenHour: 13,
+    activity: DEFAULT_ACTIVITY,
+    rainFirst: false,
+  })
   const [result, setResult] = useState(null)
   const [isSample, setIsSample] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -208,7 +217,12 @@ export default function App() {
             )}
 
             {result ? (
-              <ResultCard key={result.generatedAt} result={result} isSample={isSample} />
+              <ResultCard
+                key={result.generatedAt}
+                result={result}
+                isSample={isSample}
+                rainFirst={form.rainFirst}
+              />
             ) : (
               !loading &&
               !error && (

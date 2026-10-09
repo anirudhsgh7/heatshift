@@ -33,7 +33,7 @@ export function averageFor(forecast, start, duration) {
   return sum / duration
 }
 
-export function rankWindows(forecast, duration, limit = 3) {
+export function candidateWindows(forecast, duration) {
   if (!Array.isArray(forecast) || !Number.isInteger(duration) || duration < 1) return []
   const windows = []
 
@@ -71,6 +71,26 @@ export function rankWindows(forecast, duration, limit = 3) {
     })
   }
 
-  windows.sort((a, b) => (a.avg === b.avg ? a.start.localeCompare(b.start) : a.avg - b.avg))
+  return windows
+}
+
+export function rainUsable(windows) {
+  if (!Array.isArray(windows)) return false
+  const values = windows.filter((w) => w.rainProb !== null).map((w) => w.rainProb)
+  if (values.length < 2) return false
+  return new Set(values.map((v) => Math.round(v))).size > 1
+}
+
+export function rankWindows(forecast, duration, { limit = 3, rainFirst = false } = {}) {
+  const windows = candidateWindows(forecast, duration)
+  windows.sort((a, b) => {
+    if (rainFirst) {
+      const rainA = a.rainProb === null ? Number.POSITIVE_INFINITY : a.rainProb
+      const rainB = b.rainProb === null ? Number.POSITIVE_INFINITY : b.rainProb
+      if (rainA !== rainB) return rainA - rainB
+    }
+    if (a.avg !== b.avg) return a.avg - b.avg
+    return a.start.localeCompare(b.start)
+  })
   return windows.slice(0, limit)
 }

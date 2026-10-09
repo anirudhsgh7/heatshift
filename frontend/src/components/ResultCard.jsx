@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { SAMPLE_LABEL } from '../sampleData.js'
-import { averageFor, hoursBetween, rankWindows } from '../rankWindows.js'
+import {
+  averageFor,
+  candidateWindows,
+  hoursBetween,
+  rainUsable,
+  rankWindows,
+} from '../rankWindows.js'
 import HourChart from './HourChart.jsx'
 import WindowOptions from './WindowOptions.jsx'
 
@@ -16,12 +22,14 @@ function round1(value) {
   return Math.round(value * 10) / 10
 }
 
-export default function ResultCard({ result, isSample }) {
+export default function ResultCard({ result, isSample, rainFirst = false }) {
   const { originalBlock, suggestedBlock, forecast, timezone, location, source, generatedAt } = result
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   const duration = hoursBetween(suggestedBlock.start, suggestedBlock.end) ?? 1
-  const ranked = rankWindows(forecast, duration)
+  const rainOk = rainUsable(candidateWindows(forecast, duration))
+  const effectiveRainFirst = rainFirst && rainOk
+  const ranked = rankWindows(forecast, duration, { rainFirst: effectiveRainFirst })
   const options =
     ranked.length > 0
       ? ranked
@@ -112,6 +120,14 @@ export default function ResultCard({ result, isSample }) {
         plannedAvg={plannedAvg}
         onSelect={setSelectedIndex}
       />
+
+      {rainFirst && (
+        <p className="hint">
+          {rainOk
+            ? 'Rain priority is on: windows are ranked by lowest rain chance first, then by average feels-like temperature.'
+            : 'Rain priority is on, but this forecast has no usable rain variation across the windows (rain chance missing or identical everywhere), so windows are ranked by temperature only.'}
+        </p>
+      )}
 
       <HourChart
         key={generatedAt}
