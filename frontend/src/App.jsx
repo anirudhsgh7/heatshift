@@ -208,7 +208,7 @@ export default function App() {
             )}
 
             {result ? (
-              <ResultCard result={result} isSample={isSample} />
+              <ResultCard key={result.generatedAt} result={result} isSample={isSample} />
             ) : (
               !loading &&
               !error && (

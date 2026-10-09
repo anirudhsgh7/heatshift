@@ -209,7 +209,7 @@ export default function HourChart({
           </span>
           <span className="legend-item">
             <span className="legend-swatch legend-swatch--suggested" aria-hidden="true" />
-            Suggested window
+            Selected window
           </span>
         </div>
       </div>
