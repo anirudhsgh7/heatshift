@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchWeatherOverview } from '../overview.js'
 import OverviewBody from './OverviewBody.jsx'
+import UnitToggle from './UnitToggle.jsx'
 
 export default function WeatherOverview({ location, selectedDate }) {
   const [attempt, setAttempt] = useState(0)
@@ -24,11 +25,14 @@ export default function WeatherOverview({ location, selectedDate }) {
 
   return (
     <section className="card card--pad" aria-labelledby="overview-title">
-      <div className="card__head">
-        <h2 className="card__title" id="overview-title">
-          Weather overview
-        </h2>
-        <p className="card__hint">Modeled forecast values for the selected city.</p>
+      <div className="card__head card__head--row">
+        <div>
+          <h2 className="card__title" id="overview-title">
+            Weather overview
+          </h2>
+          <p className="card__hint">Modeled forecast values for the selected city.</p>
+        </div>
+        <UnitToggle />
       </div>
 
       {status === 'loading' && (

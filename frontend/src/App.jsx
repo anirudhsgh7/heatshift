@@ -8,6 +8,7 @@ import ResultCard from './components/ResultCard.jsx'
 import WeatherOverview from './components/WeatherOverview.jsx'
 import { DEFAULT_ACTIVITY } from './activities.js'
 import { PRESET_CITIES } from './presets.js'
+import { loadUnit, saveUnit, TempUnitContext } from './units.js'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -43,7 +44,13 @@ export default function App() {
   const [isSample, setIsSample] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [unit, setUnitState] = useState(loadUnit)
   const abortRef = useRef(null)
+
+  function changeUnit(next) {
+    setUnitState(next)
+    saveUnit(next)
+  }
 
   async function runRecommendation(nextForm) {
     if (abortRef.current) abortRef.current.abort()
@@ -113,7 +120,8 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <TempUnitContext.Provider value={{ unit, setUnit: changeUnit }}>
+      <div className="app">
       <header className="topbar">
         <div className="topbar__inner">
           <div className="brand">
@@ -251,6 +259,7 @@ export default function App() {
           </p>
         </div>
       </footer>
-    </div>
+      </div>
+    </TempUnitContext.Provider>
   )
 }

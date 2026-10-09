@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { buildScale, computeGeometry, PAD_LEFT, PAD_RIGHT } from '../chartGeometry.js'
 import { weatherLabel } from '../weatherCodes.js'
+import { convertTemp, formatTemp, unitSymbol, unitWord, useTempUnit } from '../units.js'
 
 const PAD_TOP = 16
 const PLOT_H = 168
@@ -46,13 +47,9 @@ function pathFor(points) {
   return d.trim()
 }
 
-function fmt(value) {
-  return typeof value === 'number' ? value.toFixed(1) : '—'
-}
-
-function formatHour(hour) {
-  const d = fmt(hour.temp)
-  const a = fmt(hour.apparentTemp)
+function formatHour(hour, unit) {
+  const d = formatTemp(hour.temp, unit)
+  const a = formatTemp(hour.apparentTemp, unit)
   const humidity = typeof hour.humidity === 'number' ? `${Math.round(hour.humidity)}%` : '—'
   const rain = typeof hour.precipProb === 'number' ? `${Math.round(hour.precipProb)}%` : '—'
   const wind = typeof hour.windSpeed === 'number' ? `${hour.windSpeed.toFixed(1)} km/h` : '—'
@@ -60,24 +57,26 @@ function formatHour(hour) {
   return { d, a, humidity, rain, wind, condition }
 }
 
-function ariaFor(hour, hasAir) {
-  const f = formatHour(hour)
-  const air = hasAir ? `, air temperature ${f.d} degrees` : ''
-  return `${hour.time.slice(11, 16)} — feels like ${f.a} degrees${air}, humidity ${f.humidity}, ${f.rain} chance of rain, wind ${f.wind}, ${f.condition}`
+function ariaFor(hour, hasAir, unit) {
+  const f = formatHour(hour, unit)
+  const word = unitWord(unit)
+  const air = hasAir ? `, air temperature ${f.d} degrees ${word}` : ''
+  return `${hour.time.slice(11, 16)} — feels like ${f.a} degrees ${word}${air}, humidity ${f.humidity}, ${f.rain} chance of rain, wind ${f.wind}, ${f.condition}`
 }
 
-function DetailGrid({ hour, hasAir, className }) {
-  const f = formatHour(hour)
+function DetailGrid({ hour, hasAir, unit, className }) {
+  const f = formatHour(hour, unit)
+  const symbol = unitSymbol(unit)
   return (
     <dl className={className}>
       <div>
         <dt>Feels like</dt>
-        <dd>{f.a} °C</dd>
+        <dd>{f.a} {symbol}</dd>
       </div>
       {hasAir && (
         <div>
           <dt>Air temp</dt>
-          <dd>{f.d} °C</dd>
+          <dd>{f.d} {symbol}</dd>
         </div>
       )}
       <div>
@@ -109,6 +108,7 @@ export default function HourChart({
   const [scrollLeft, setScrollLeft] = useState(0)
   const scrollRef = useRef(null)
   const width = useContainerWidth(scrollRef)
+  const { unit } = useTempUnit()
 
   const list = Array.isArray(forecast) ? forecast : []
   const n = list.length
@@ -132,13 +132,18 @@ export default function HourChart({
   }
 
   const showAirLine = showAir && hasAir
-  const scaleVals = usableFeels.concat(showAirLine ? airVals.filter((v) => v !== null) : [])
+  const toDisplay = (value) => (unit === 'F' ? convertTemp(value) : value)
+  const displayFeels = feelsVals.map((v) => (v === null ? null : toDisplay(v)))
+  const displayAir = airVals.map((v) => (v === null ? null : toDisplay(v)))
+  const scaleVals = displayFeels
+    .filter((v) => v !== null)
+    .concat(showAirLine ? displayAir.filter((v) => v !== null) : [])
   const { lo, hi, ticks } = buildScale(scaleVals)
   const { stepX, inner, chartW } = computeGeometry(n, width)
   const x = (i) => (n > 1 ? PAD_LEFT + i * stepX : PAD_LEFT + inner / 2)
   const y = (v) => PAD_TOP + PLOT_H * (1 - (v - lo) / (hi - lo))
-  const feelsPts = feelsVals.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
-  const airPts = airVals.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
+  const feelsPts = displayFeels.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
+  const airPts = displayAir.map((v, i) => (v === null ? null : { x: x(i), y: y(v) }))
   const feelsPath = pathFor(feelsPts)
   const airPath = showAirLine ? pathFor(airPts) : ''
 
@@ -167,7 +172,8 @@ export default function HourChart({
 
   const hitHalf = n > 1 ? stepX / 2 : stepX
   const anchorValue =
-    (activeIdx !== null ? feelsVals[activeIdx] ?? airVals[activeIdx] : null) ?? (lo + hi) / 2
+    (activeIdx !== null ? displayFeels[activeIdx] ?? displayAir[activeIdx] : null) ??
+    (lo + hi) / 2
   const anchorY = y(anchorValue)
   let tipTop = anchorY - TIP_H - 14
   if (tipTop < 6) tipTop = Math.min(anchorY + 16, HEIGHT - TIP_H - 4)
@@ -313,7 +319,7 @@ export default function HourChart({
                 tabIndex={0}
                 role="button"
                 aria-pressed={pinnedIdx === i}
-                aria-label={ariaFor(hour, hasAir)}
+                aria-label={ariaFor(hour, hasAir, unit)}
                 onMouseEnter={() => setHoverIdx(i)}
                 onMouseLeave={() => setHoverIdx(null)}
                 onFocus={() => setHoverIdx(i)}
@@ -340,7 +346,7 @@ export default function HourChart({
               </text>
             ))}
             <text className="chart-unit" x={4} y={PAD_TOP + 3.5}>
-              °C
+              {unitSymbol(unit)}
             </text>
 
             {list.map((hour, i) => (
@@ -363,9 +369,9 @@ export default function HourChart({
           <div className="chart-tip" style={{ left: `${tipLeft}px`, top: `${tipTop}px` }}>
             <p className="chart-tip__title">
               {activeHour.time.slice(11, 16)}
-              <span className="chart-tip__condition"> · {formatHour(activeHour).condition}</span>
+              <span className="chart-tip__condition"> · {formatHour(activeHour, unit).condition}</span>
             </p>
-            <DetailGrid hour={activeHour} hasAir={hasAir} className="chart-tip__grid" />
+            <DetailGrid hour={activeHour} hasAir={hasAir} unit={unit} className="chart-tip__grid" />
           </div>
         )}
       </div>
@@ -375,13 +381,13 @@ export default function HourChart({
           <div className="chart-detail__head">
             <p className="chart-detail__time">
               {pinnedHour.time.slice(11, 16)}
-              <span className="chart-detail__condition"> · {formatHour(pinnedHour).condition}</span>
+              <span className="chart-detail__condition"> · {formatHour(pinnedHour, unit).condition}</span>
             </p>
             <button type="button" className="chart-detail__clear" onClick={() => setPinnedIdx(null)}>
               Clear
             </button>
           </div>
-          <DetailGrid hour={pinnedHour} hasAir={hasAir} className="chart-detail__grid" />
+          <DetailGrid hour={pinnedHour} hasAir={hasAir} unit={unit} className="chart-detail__grid" />
         </div>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { weatherLabel } from '../weatherCodes.js'
+import { formatTempLabel, useTempUnit } from '../units.js'
 
 function parseDate(dateStr) {
   return new Date(`${dateStr}T00:00:00Z`)
@@ -30,6 +31,7 @@ function metric(value, unit, digits) {
 }
 
 export default function OverviewBody({ data, selectedDate }) {
+  const { unit } = useTempUnit()
   const { current, daily, timezone } = data
   const currentDate = current.time ? current.time.slice(0, 10) : null
   const selected = daily.find((d) => d.date === selectedDate) ?? daily[0] ?? null
@@ -48,7 +50,7 @@ export default function OverviewBody({ data, selectedDate }) {
           <div className="overview__now">
             <div>
               <p className="overview__now-label">Now — modeled</p>
-              <p className="overview__temp">{metric(current.temp, '°C', 1)}</p>
+              <p className="overview__temp">{formatTempLabel(current.temp, unit)}</p>
             </div>
             {current.weatherCode !== null && (
               <p className="overview__condition">{weatherLabel(current.weatherCode)}</p>
@@ -58,7 +60,7 @@ export default function OverviewBody({ data, selectedDate }) {
           <div className="overview__stats">
             <div className="stat">
               <span className="stat__label">Feels like</span>
-              <span className="stat__value">{metric(current.apparentTemp, '°C', 1)}</span>
+              <span className="stat__value">{formatTempLabel(current.apparentTemp, unit)}</span>
             </div>
             <div className="stat">
               <span className="stat__label">Humidity</span>
@@ -85,8 +87,8 @@ export default function OverviewBody({ data, selectedDate }) {
             )}
           </div>
           <div className="overview__day-values">
-            <span className="overview__high">High {metric(selected.tempMax, '°C', 1)}</span>
-            <span className="overview__low">Low {metric(selected.tempMin, '°C', 1)}</span>
+            <span className="overview__high">High {formatTempLabel(selected.tempMax, unit)}</span>
+            <span className="overview__low">Low {formatTempLabel(selected.tempMin, unit)}</span>
           </div>
         </div>
       )}

@@ -173,6 +173,13 @@
   margin-bottom: 16px;
 }
 
+.card__head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
 .card__title {
   font-size: 0.98rem;
   font-weight: 800;
@@ -294,6 +301,11 @@
   border-color: var(--line);
   color: var(--ink-strong);
   box-shadow: var(--shadow-sm);
+}
+
+.segmented--compact .segmented__btn {
+  padding: 5px 12px;
+  font-size: 0.8rem;
 }
 
 /* ---------- inputs ---------- */

@@ -1,19 +1,22 @@
 import { useRef } from 'react'
 import { HOT_THRESHOLD } from '../rankWindows.js'
+import { formatDelta, formatTemp, formatTempLabel, unitSymbol, useTempUnit } from '../units.js'
 
 function rangeLabel(window) {
   return `${window.start.slice(11, 16)}–${window.end.slice(11, 16)}`
 }
 
-function deltaLabel(delta) {
+function deltaLabel(delta, unit) {
   const rounded = Math.round(delta * 10) / 10
   if (Math.abs(rounded) < 0.05) return 'same as your plan'
-  if (rounded > 0) return `${rounded.toFixed(1)} °C cooler than plan`
-  return `${Math.abs(rounded).toFixed(1)} °C warmer than plan`
+  const symbol = unitSymbol(unit)
+  if (rounded > 0) return `${formatDelta(rounded, unit)} ${symbol} cooler than plan`
+  return `${formatDelta(Math.abs(rounded), unit)} ${symbol} warmer than plan`
 }
 
 export default function WindowOptions({ options, selectedIndex, plannedAvg, onSelect }) {
   const refs = useRef([])
+  const { unit } = useTempUnit()
   const best = options[0]
 
   function handleKey(event, index) {
@@ -63,11 +66,11 @@ export default function WindowOptions({ options, selectedIndex, plannedAvg, onSe
                 <span className="option__body">
                   <span className="option__time">{rangeLabel(option)}</span>
                   <span className="option__delta">
-                    {deltaLabel(plannedAvg - option.avg)}
+                    {deltaLabel(plannedAvg - option.avg, unit)}
                     {rain !== null && rain > 0 ? ` · rain up to ${Math.round(rain)}%` : ''}
                   </span>
                 </span>
-                <span className="option__avg">{option.avg.toFixed(1)}°C</span>
+                <span className="option__avg">{formatTempLabel(option.avg, unit)}</span>
                 {index === 0 && <span className="option__tag">Best overall</span>}
                 {index === selectedIndex && index !== 0 && (
                   <span className="option__tag option__tag--sel">Selected</span>
@@ -88,8 +91,8 @@ export default function WindowOptions({ options, selectedIndex, plannedAvg, onSe
 
       {best.avg >= HOT_THRESHOLD && (
         <p className="hint hint--warn">
-          Every feasible window is hot: even the coolest averages {best.avg.toFixed(1)} °C feels-like.
-          Ranking is based on temperature alone.
+          Every feasible window is hot: even the coolest averages {formatTemp(best.avg, unit)}{' '}
+          {unitSymbol(unit)} feels-like. Ranking is based on temperature alone.
         </p>
       )}
     </div>

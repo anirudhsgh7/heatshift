@@ -9,6 +9,7 @@ import {
 } from '../rankWindows.js'
 import HourChart from './HourChart.jsx'
 import WindowOptions from './WindowOptions.jsx'
+import { formatDelta, formatTemp, formatTempLabel, unitSymbol, useTempUnit } from '../units.js'
 
 function formatTime(iso) {
   return iso.slice(11, 16)
@@ -25,6 +26,8 @@ function round1(value) {
 export default function ResultCard({ result, isSample, rainFirst = false }) {
   const { originalBlock, suggestedBlock, forecast, timezone, location, source, generatedAt } = result
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const { unit } = useTempUnit()
+  const symbol = unitSymbol(unit)
 
   const duration = hoursBetween(suggestedBlock.start, suggestedBlock.end) ?? 1
   const rainOk = rainUsable(candidateWindows(forecast, duration))
@@ -63,16 +66,16 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
     sub =
       rank === 1
         ? 'It is also the coolest feasible window in your available range.'
-        : `The coolest feasible window is ${formatBlock(best)} — ${round1(plannedAvg - best.avg).toFixed(1)} °C cooler on average.`
+        : `The coolest feasible window is ${formatBlock(best)} — ${formatDelta(round1(plannedAvg - best.avg), unit)} ${symbol} cooler on average.`
   } else if (cooler) {
     headline = `Move the task to ${selectedRange}`
-    sub = `About ${selectedDelta.toFixed(1)} °C cooler on average than your planned ${plannedRange} (feels-like).`
+    sub = `About ${formatDelta(selectedDelta, unit)} ${symbol} cooler on average than your planned ${plannedRange} (feels-like).`
   } else if (warmer) {
-    headline = `${selectedRange} is about ${Math.abs(selectedDelta).toFixed(1)} °C warmer than your plan`
-    sub = `Your planned ${plannedRange} averages ${plannedAvg.toFixed(1)} °C; this window averages ${selected.avg.toFixed(1)} °C (feels-like).`
+    headline = `${selectedRange} is about ${formatDelta(Math.abs(selectedDelta), unit)} ${symbol} warmer than your plan`
+    sub = `Your planned ${plannedRange} averages ${formatTemp(plannedAvg, unit)} ${symbol}; this window averages ${formatTemp(selected.avg, unit)} ${symbol} (feels-like).`
   } else {
     headline = `${selectedRange} matches your plan`
-    sub = `Nearly the same average feels-like as your planned ${plannedRange} (${plannedAvg.toFixed(1)} °C).`
+    sub = `Nearly the same average feels-like as your planned ${plannedRange} (${formatTemp(plannedAvg, unit)} ${symbol}).`
   }
 
   return (
@@ -83,9 +86,9 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
         <p className="result__kicker">Recommendation</p>
         <span className={cooler ? 'delta delta--good' : warmer ? 'delta delta--warm' : 'delta'}>
           {cooler
-            ? `≈ ${selectedDelta.toFixed(1)} °C cooler`
+            ? `≈ ${formatDelta(selectedDelta, unit)} ${symbol} cooler`
             : warmer
-              ? `≈ ${Math.abs(selectedDelta).toFixed(1)} °C warmer`
+              ? `≈ ${formatDelta(Math.abs(selectedDelta), unit)} ${symbol} warmer`
               : 'Similar to your plan'}
         </span>
       </div>
@@ -99,14 +102,14 @@ export default function ResultCard({ result, isSample, rainFirst = false }) {
         <article className={isPlanned ? 'block block--best' : 'block'}>
           <span className="block__kicker">Planned{isPlanned ? ' · selected' : ''}</span>
           <span className="block__time">{plannedRange}</span>
-          <span className="block__temp">{plannedAvg.toFixed(1)}°C</span>
+          <span className="block__temp">{formatTempLabel(plannedAvg, unit)}</span>
           <span className="block__note">avg feels-like</span>
         </article>
         {!isPlanned && (
           <article className={cooler ? 'block block--best' : 'block'}>
             <span className="block__kicker">Selected</span>
             <span className="block__time">{selectedRange}</span>
-            <span className="block__temp">{selected.avg.toFixed(1)}°C</span>
+            <span className="block__temp">{formatTempLabel(selected.avg, unit)}</span>
             <span className="block__note">
               avg feels-like · {rank === 1 ? 'best overall' : `rank #${rank}`}
             </span>
