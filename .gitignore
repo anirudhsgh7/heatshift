@@ -1,0 +1,87 @@
+# ============================================
+# heatshift — source + essential files only
+# ============================================
+
+# --- Documentation, planning, agent instructions (never commit) ---
+# Covers README, PRD/product specs, context.md, AGENTS/agents.md,
+# planning docs, internal notes, and other unnecessary docs.
+# If a .md/.mdx file is ever required by the app, un-ignore it:
+#   !path/to/needed-file.md
+*.md
+*.mdx
+docs/
+notes/
+plan/
+plans/
+PRD/
+prd/
+context.md
+AGENTS.md
+agents.md
+CLAUDE.md
+.cursorrules
+.clinerules
+.windsurfrules
+.github/copilot-instructions.md
+.opencode/
+.claude/
+.cursor/
+
+# --- Secrets, env, credentials ---
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets/
+secrets.json
+.npmrc
+.netrc
+
+# --- Dependencies / virtual envs ---
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- Build outputs & caches ---
+dist/
+build/
+out/
+target/
+.next/
+.nuxt/
+.output/
+.turbo/
+*.tsbuildinfo
+coverage/
+.cache/
+.eslintcache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Logs ---
+*.log
+logs/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- IDE / editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- OS-generated ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
