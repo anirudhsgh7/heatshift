@@ -63,6 +63,7 @@ coverage/
 .cache/
 .eslintcache
 backend/function.zip*
+frontend-build.zip
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
