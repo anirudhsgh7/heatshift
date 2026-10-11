@@ -336,6 +336,8 @@ export default function App() {
               <li>Live Open-Meteo forecast</li>
             </ul>
           </div>
+
+          <WeatherOverview location={location} selectedDate={form.date} />
         </section>
 
         <div className="layout">
@@ -357,8 +359,6 @@ export default function App() {
                 geoError={geoError}
               />
             </section>
-
-            <WeatherOverview location={location} selectedDate={form.date} />
 
             <section className="card card--pad" aria-labelledby="planner-title">
               <div className="card__head">
