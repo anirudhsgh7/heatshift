@@ -9,6 +9,7 @@
 #   !path/to/needed-file.md
 *.md
 *.mdx
+!/README.md
 docs/
 notes/
 plan/
