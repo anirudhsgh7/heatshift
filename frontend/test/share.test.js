@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  buildPlanSummary,
   buildShareQuery,
   buildShareUrl,
   parseShareQuery,
@@ -119,4 +120,24 @@ test('bare search strings return null and shared URLs keep the path', () => {
   assert.equal(parse('?unit=C'), null)
   assert.equal(buildShareUrl('a=1', 'https://app.example/path'), 'https://app.example/path?a=1')
   assert.ok(!SHARE_KEYS.includes('unit'))
+})
+
+test('buildPlanSummary is a text-only summary with no URL appended', () => {
+  const summary = buildPlanSummary({
+    city: 'Delhi',
+    timezone: 'Asia/Kolkata',
+    date: '2026-10-11',
+    activityLabel: 'Outdoor exercise',
+    duration: 2,
+    planned: { start: '2026-10-11T13:00', end: '2026-10-11T15:00', avg: 35.2 },
+    selected: { start: '2026-10-11T10:00', end: '2026-10-11T12:00', avg: 31.4 },
+    unit: 'C',
+    generatedAt: '2026-10-11T13:05:00+05:30',
+  })
+  assert.ok(!summary.includes('http'))
+  assert.ok(!summary.includes('Plan link'))
+  assert.ok(summary.includes('Open-Meteo.com (CC BY 4.0)'))
+  assert.ok(summary.includes('not medical or safety advice'))
+  assert.ok(summary.includes('Delhi'))
+  assert.ok(summary.includes('3.8'))
 })

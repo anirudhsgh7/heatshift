@@ -114,7 +114,6 @@ export default function ResultCard({ result, isSample, rainFirst = false, activi
         selected: { start: selected.start, end: selected.end, avg: selected.avg },
         unit,
         generatedAt,
-        link: buildShareUrl(shareQuery),
       }),
       'plan'
     )

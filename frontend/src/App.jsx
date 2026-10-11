@@ -10,7 +10,7 @@ import ComplianceBadges from './components/ComplianceBadges.jsx'
 import { ACTIVITIES, DEFAULT_ACTIVITY } from './activities.js'
 import { PRESET_CITIES } from './presets.js'
 import { nearbyLabel, reverseGeocode } from './reverseGeocode.js'
-import { buildShareQuery, parseShareQuery } from './share.js'
+import { parseShareQuery } from './share.js'
 import { buildWindowIso, isoHour } from './plannerTime.js'
 import { loadUnit, saveUnit, TempUnitContext } from './units.js'
 import { hasStoredTheme, loadTheme, saveTheme, ThemeContext } from './theme.js'
@@ -157,53 +157,14 @@ export default function App() {
   useEffect(() => {
     if (boot.form && boot.parsed?.location) {
       runRef.current(boot.form, boot.parsed.location)
+      window.history.replaceState(null, '', window.location.pathname)
     }
-    function onPopState() {
-      const parsed = parseCurrentUrl(dateString(0))
-      if (parsed?.location && parsed.form) {
-        const nextForm = { ...defaultForm(dateString(0)), ...parsed.form }
-        setLocation(parsed.location)
-        setForm(nextForm)
-        setShareNotice(parsed.notice ?? '')
-        runRef.current(nextForm, parsed.location)
-      } else if (parsed?.invalid) {
-        setShareNotice(parsed.notice)
-        setResult(null)
-        setError('')
-        setIsSample(false)
-      } else {
-        setShareNotice('')
-        setResult(null)
-        setError('')
-        setIsSample(false)
-      }
-    }
-    window.addEventListener('popstate', onPopState)
-    return () => window.removeEventListener('popstate', onPopState)
   }, [boot])
 
   function handleSubmit(nextForm) {
     setForm(nextForm)
     setShareNotice('')
     runRecommendation(nextForm)
-    if (typeof window !== 'undefined') {
-      const query = buildShareQuery({
-        name: location.name,
-        lat: location.lat,
-        lon: location.lon,
-        date: nextForm.date,
-        startHour: nextForm.startHour,
-        endHour: nextForm.endHour,
-        duration: nextForm.duration,
-        chosenHour: nextForm.chosenHour,
-        activity: nextForm.activity,
-        rainFirst: nextForm.rainFirst,
-      })
-      const nextUrl = `?${query}`
-      if (window.location.search !== nextUrl) {
-        window.history.pushState(null, '', nextUrl)
-      }
-    }
   }
 
   function handleSelectLocation(place) {

@@ -170,7 +170,6 @@ export function buildPlanSummary({
   selected,
   unit,
   generatedAt,
-  link,
 }) {
   const symbol = unitSymbol(unit)
   const diff = round1(planned.avg - selected.avg)
@@ -193,7 +192,6 @@ export function buildPlanSummary({
     `Recommended window: ${hourRange(selected)} — ${formatTemp(selected.avg, unit)} ${symbol} avg feels-like`,
     `Difference: ${diffText}`,
     `Forecast fetched: ${formatStamp(generatedAt, timezone)}`,
-    ...(link ? [`Plan link: ${link}`] : []),
     '',
     'Forecast-based planning estimate, ranked by temperature only — not medical or safety advice.',
     'Weather data by Open-Meteo.com (CC BY 4.0).',
