@@ -14,10 +14,14 @@ function deltaLabel(delta, unit) {
   return `${formatDelta(Math.abs(rounded), unit)} ${symbol} warmer than plan`
 }
 
-export default function WindowOptions({ options, selectedIndex, plannedAvg, onSelect }) {
+export default function WindowOptions({ options, selectedIndex, plannedAvg, rainFirst = false, onSelect }) {
   const refs = useRef([])
   const { unit } = useTempUnit()
   const best = options[0]
+
+  const rankingHint = rainFirst
+    ? 'Ranked by lowest rain chance first, then by average feels-like temperature; ties go to the earlier start.'
+    : 'Ranked by lowest average feels-like temperature; ties go to the earlier start. Rain chance appears only when the forecast covers every hour of the window.'
 
   function handleKey(event, index) {
     const direction =
@@ -37,10 +41,7 @@ export default function WindowOptions({ options, selectedIndex, plannedAvg, onSe
     <div className="options">
       <div className="options__head">
         <p className="chart-title">Best feasible windows</p>
-        <p className="options__hint">
-          Ranked by lowest average feels-like temperature; ties go to the earlier start. Rain chance
-          appears only when the forecast covers every hour of the window.
-        </p>
+        <p className="options__hint">{rankingHint}</p>
       </div>
 
       <ul className="options__list" role="radiogroup" aria-label="Choose a time window">

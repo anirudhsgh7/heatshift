@@ -136,12 +136,23 @@ export default function ResultCard({ result, isSample, rainFirst = false, activi
 
   let headline
   let sub
+  const bestDelta = round1(plannedAvg - best.avg)
+  const bestDeltaText =
+    Math.abs(bestDelta) < 0.05
+      ? 'about the same average feels-like'
+      : bestDelta > 0
+        ? `${formatDelta(bestDelta, unit)} ${symbol} cooler on average`
+        : `${formatDelta(Math.abs(bestDelta), unit)} ${symbol} warmer on average`
   if (isPlanned) {
     headline = `Your planned window (${selectedRange}) is selected`
     sub =
       rank === 1
-        ? 'It is also the coolest feasible window in your available range.'
-        : `The coolest feasible window is ${formatBlock(best)} — ${formatDelta(round1(plannedAvg - best.avg), unit)} ${symbol} cooler on average.`
+        ? effectiveRainFirst
+          ? 'It is also the top-ranked window for your rain preference.'
+          : 'It is also the coolest feasible window in your available range.'
+        : effectiveRainFirst
+          ? `The best-ranked window is ${formatBlock(best)} — ${bestDeltaText} (feels-like).`
+          : `The coolest feasible window is ${formatBlock(best)} — ${bestDeltaText} (feels-like).`
   } else if (cooler) {
     headline = `Move the task to ${selectedRange}`
     sub = `About ${formatDelta(selectedDelta, unit)} ${symbol} cooler on average than your planned ${plannedRange} (feels-like).`
@@ -196,6 +207,7 @@ export default function ResultCard({ result, isSample, rainFirst = false, activi
         options={options}
         selectedIndex={activeIndex}
         plannedAvg={plannedAvg}
+        rainFirst={effectiveRainFirst}
         onSelect={setSelectedIndex}
       />
 

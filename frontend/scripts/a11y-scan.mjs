@@ -10,14 +10,15 @@ const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8')
 const virtualConsole = new VirtualConsole()
 
 const scenarios = []
-async function addScenario(name, build, wrapInMain = false) {
-  scenarios.push({ name, build, wrapInMain })
+async function addScenario(name, build, wrapInMain = false, dataTheme = '') {
+  scenarios.push({ name, build, wrapInMain, dataTheme })
 }
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'silent' })
 try {
   const { default: App } = await server.ssrLoadModule('/src/App.jsx')
   await addScenario('app (default state)', () => renderToString(createElement(App)))
+  await addScenario('app (dark theme, toggle in topbar)', () => renderToString(createElement(App)), false, 'dark')
 
   const { default: ResultCard } = await server.ssrLoadModule('/src/components/ResultCard.jsx')
   const { sampleRecommendation } = await server.ssrLoadModule('/src/sampleData.js')
@@ -75,10 +76,10 @@ try {
   )
 
   let failures = 0
-  for (const { name, build, wrapInMain } of scenarios) {
+  for (const { name, build, wrapInMain, dataTheme } of scenarios) {
     const body = build()
     const content = wrapInMain ? `<main>${body}</main>` : body
-    const html = `<html lang="en"><head><meta charset="utf-8"><title>HeatShift scan</title></head><body>${content}</body></html>`
+    const html = `<html lang="en"${dataTheme ? ` data-theme="${dataTheme}"` : ''}><head><meta charset="utf-8"><title>HeatShift scan</title></head><body>${content}</body></html>`
     const dom = new JSDOM(html, { runScripts: 'dangerously', virtualConsole })
     dom.window.eval(axeSource)
     const results = await dom.window.axe.run(dom.window.document, {

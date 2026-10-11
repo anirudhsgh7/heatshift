@@ -11,7 +11,10 @@ import { ACTIVITIES, DEFAULT_ACTIVITY } from './activities.js'
 import { PRESET_CITIES } from './presets.js'
 import { nearbyLabel, reverseGeocode } from './reverseGeocode.js'
 import { buildShareQuery, parseShareQuery } from './share.js'
+import { buildWindowIso, isoHour } from './plannerTime.js'
 import { loadUnit, saveUnit, TempUnitContext } from './units.js'
+import { hasStoredTheme, loadTheme, saveTheme, ThemeContext } from './theme.js'
+import ThemeToggle from './components/ThemeToggle.jsx'
 
 function pad(value) {
   return String(value).padStart(2, '0')
@@ -24,10 +27,6 @@ function dateString(offsetDays = 0) {
   const d = new Date()
   d.setDate(d.getDate() + offsetDays)
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-function isoHour(date, hour) {
-  return `${date}T${pad(hour)}:00`
 }
 
 function defaultForm(date) {
@@ -75,6 +74,8 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [unit, setUnitState] = useState(loadUnit)
+  const [theme, setThemeState] = useState(loadTheme)
+  const explicitThemeRef = useRef(hasStoredTheme())
   const abortRef = useRef(null)
   const runRef = useRef(null)
   const locateSeqRef = useRef(0)
@@ -83,6 +84,31 @@ export default function App() {
     setUnitState(next)
     saveUnit(next)
   }
+
+  function changeTheme(next) {
+    explicitThemeRef.current = true
+    setThemeState(next)
+    saveTheme(next)
+  }
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    const meta = document.querySelector('meta[name="theme-color"]')
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0d141c' : '#0f766e')
+  }, [theme])
+
+  useEffect(() => {
+    const mq =
+      typeof window !== 'undefined' && window.matchMedia
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null
+    if (!mq || typeof mq.addEventListener !== 'function') return undefined
+    function onSystemChange(event) {
+      if (!explicitThemeRef.current) setThemeState(event.matches ? 'dark' : 'light')
+    }
+    mq.addEventListener('change', onSystemChange)
+    return () => mq.removeEventListener('change', onSystemChange)
+  }, [])
 
   async function runRecommendation(nextForm, nextLocation = location) {
     if (abortRef.current) abortRef.current.abort()
@@ -95,13 +121,21 @@ export default function App() {
     setIsSample(false)
 
     try {
+      const window = buildWindowIso(nextForm.date, {
+        startHour: nextForm.startHour,
+        endHour: nextForm.endHour,
+      })
+      if (window === null) {
+        setError('The selected time window is invalid — pick hours between 00:00 and 24:00.')
+        return
+      }
       const data = await fetchRecommendation(
         {
           lat: nextLocation.lat,
           lon: nextLocation.lon,
           duration: nextForm.duration,
-          start: isoHour(nextForm.date, nextForm.startHour),
-          end: isoHour(nextForm.date, nextForm.endHour),
+          start: window.start,
+          end: window.end,
           chosen: isoHour(nextForm.date, nextForm.chosenHour),
           name: nextLocation.name,
         },
@@ -174,10 +208,15 @@ export default function App() {
 
   function handleSelectLocation(place) {
     locateSeqRef.current += 1
+    abortRef.current?.abort()
     setLocating(false)
     setResolving(false)
     setGeoNameError(false)
     setLocation(place)
+    setResult(null)
+    setError('')
+    setIsSample(false)
+    setShareNotice('')
   }
 
   function geoErrorMessage(error) {
@@ -246,6 +285,7 @@ export default function App() {
   }
 
   return (
+    <ThemeContext.Provider value={{ theme, setTheme: changeTheme }}>
     <TempUnitContext.Provider value={{ unit, setUnit: changeUnit }}>
       <div className="app">
       <header className="topbar">
@@ -270,9 +310,12 @@ export default function App() {
               Heat<span className="brand__name-accent">Shift</span>
             </span>
           </div>
-          <span className="topbar__badge">
-            <span className="topbar__dot" aria-hidden="true" />
-            Heat &amp; Water · Environmental Hacks 2026
+          <span className="topbar__side">
+            <ThemeToggle />
+            <span className="topbar__badge">
+              <span className="topbar__dot" aria-hidden="true" />
+              Heat &amp; Water · Environmental Hacks 2026
+            </span>
           </span>
         </div>
       </header>
@@ -415,5 +458,6 @@ export default function App() {
       </footer>
       </div>
     </TempUnitContext.Provider>
+    </ThemeContext.Provider>
   )
 }
